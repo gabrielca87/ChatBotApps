@@ -11,34 +11,40 @@
 
 <h3>Chat</h3>
 
+<div class="overflow-auto">
+    <ul>
+        @foreach (var chatMessage in _messages)
+        {
+            <li>
+                <p class="text-secondary">@chatMessage.User, @chatMessage.DateTime.ToString("yyyy-MM-dd HH:mm:ss")</p>
+                <p class="text-dark">@chatMessage.Message</p>
+            </li>
+        }
+    </ul>
+</div>
+
 <EditForm Model="_newChatMessage" OnValidSubmit="SendMessage">
     <DataAnnotationsValidator />
     <div class="form-group">
-        <label>Message</label>
-        <InputTextArea class="form-control" @bind-Value="_newChatMessage.Message" />
+        <InputText class="form-control" @bind-Value="_newChatMessage.Message" />
     </div>
 
-    <button class="=btn btn-primary" type="submit">Send Message</button>
+    <button class="btn btn-primary float-right" type="submit">Send Message</button>
 </EditForm>
-
-<ul>
-    <Virtualize Items="_messages.OrderBy(x => x.DateTime).ToList()" Context="message">
-        <li><b>@message.User:</b> @message.Message</li>
-    </Virtualize>
-</ul>
 
 @code {
 
     private List<ChatMessage> _messages = new();
     private HubConnection _hubConnection;
     private ChatMessage _newChatMessage = new();
+    private string _currentUser;
 
     protected override async Task OnInitializedAsync()
     {
         var authenticationState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authenticationState.User;
 
-        _newChatMessage.User = user.Identity.Name;
+        _newChatMessage.User = _currentUser = user.Identity.Name;
 
         _hubConnection = new HubConnectionBuilder()
             .WithUrl(NavigationManager.BaseUri + "hubs/chat-hub")

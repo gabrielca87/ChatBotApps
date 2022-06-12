@@ -2,7 +2,8 @@ using Chat.Server.Data;
 using Chat.Server.Hubs;
 using Chat.Server.Models;
 using Chat.Server.Repositories;
-using Chat.Server.Services;
+using Chat.Server.Services.MessageProcessing;
+using Chat.Server.Services.QueueService;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -10,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System.Threading.Tasks;
 
 namespace Chat.Server
 {
@@ -47,13 +49,16 @@ namespace Chat.Server
 
             services.AddTransient<IChatMessageRepository, ChatMessageRepository>();
             services.AddTransient<IMessageProcessingService, MessageProcessingService>();
+            services.AddTransient<IQueuePublisherService, QueuePublisherService>();
+
+            services.AddSingleton<IQueueConsumerService, QueueConsumerService>();
 
             services.AddControllersWithViews();
             services.AddRazorPages();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IQueueConsumerService queueConsumerService)
         {
             if (env.IsDevelopment())
             {
@@ -85,6 +90,10 @@ namespace Chat.Server
                 endpoints.MapControllers();
                 endpoints.MapFallbackToFile("index.html");
             });
+
+            app.ApplicationServices.GetService<IQueueConsumerService>();
+
+            queueConsumerService.Run();
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Chat.Server.Services;
+﻿using Chat.Server.Services.MessageProcessing;
+using Chat.Server.Services.QueueService;
 using Microsoft.AspNetCore.SignalR;
 using System;
 using System.Threading.Tasks;
@@ -16,11 +17,12 @@ namespace Chat.Server.Hubs
 
         public async Task SendMessage(string message, string user, DateTime dateTime)
         {
-            await _messageProcessingService.ProcessMessage(message, user, dateTime);
+            await Clients.All.SendAsync("ReceiveMessage", message, user, dateTime);
 
-            if (_messageProcessingService.CanSendBackToClients)
+            var chatMessage = await _messageProcessingService.ProcessMessage(message, user, dateTime);
+            if (chatMessage.User == "BOT")
             {
-                await Clients.All.SendAsync("ReceiveMessage", message, user, dateTime);
+                await Clients.All.SendAsync("ReceiveMessage", chatMessage.Message, chatMessage.User, chatMessage.DateTime);
             }
         }
     }
