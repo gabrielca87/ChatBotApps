@@ -1,0 +1,73 @@
+﻿@page "/chat-room"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using Microsoft.AspNetCore.SignalR.Client
+@using System.ComponentModel.DataAnnotations
+
+@attribute [Authorize]
+@inject NavigationManager NavigationManager
+@inject HttpClient Http
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<h3>Chat</h3>
+
+<EditForm Model="_newChatMessage" OnValidSubmit="SendMessage">
+    <DataAnnotationsValidator />
+    <div class="form-group">
+        <label>Message</label>
+        <InputTextArea class="form-control" @bind-Value="_newChatMessage.Message" />
+    </div>
+
+    <button class="=btn btn-primary" type="submit">Send Message</button>
+</EditForm>
+
+<ul>
+    <Virtualize Items="_messages.OrderBy(x => x.DateTime).ToList()" Context="message">
+        <li><b>@message.User:</b> @message.Message</li>
+    </Virtualize>
+</ul>
+
+@code {
+
+    private List<ChatMessage> _messages = new();
+    private HubConnection _hubConnection;
+    private ChatMessage _newChatMessage = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authenticationState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authenticationState.User;
+
+        _newChatMessage.User = user.Identity.Name;
+
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.BaseUri + "hubs/chat-hub")
+            .Build();
+
+        _hubConnection.On<string, string, DateTime>("ReceiveMessage", (message, user, dateTime) =>
+        {
+            var chatMessage = new ChatMessage() { Message = message, User = user, DateTime = dateTime };
+            _messages.Add(chatMessage);
+
+            StateHasChanged();
+        });
+
+        await _hubConnection.StartAsync();
+    }
+
+    public class ChatMessage
+    {
+        [Required]
+        public string Message { get; set; }
+        [Required]
+        public string User { get; set; }
+        [Required]
+        public DateTime DateTime { get; set; }
+    }
+
+    public async Task SendMessage()
+    {
+        await _hubConnection.SendAsync("SendMessage", _newChatMessage.Message, _newChatMessage.User, DateTime.Now);
+        _newChatMessage.Message = string.Empty;
+    }
+}

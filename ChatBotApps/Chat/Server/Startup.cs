@@ -1,15 +1,15 @@
 using Chat.Server.Data;
+using Chat.Server.Hubs;
 using Chat.Server.Models;
+using Chat.Server.Repositories;
+using Chat.Server.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using System.Linq;
 
 namespace Chat.Server
 {
@@ -27,8 +27,10 @@ namespace Chat.Server
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseSqlServer(
-                    Configuration.GetConnectionString("DefaultConnection")));
+                options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+
+            services.AddDbContext<ChatAppContext>(options =>
+                options.UseSqlServer(Configuration.GetConnectionString("ChatAppConnection")));
 
             services.AddDatabaseDeveloperPageExceptionFilter();
 
@@ -40,6 +42,11 @@ namespace Chat.Server
 
             services.AddAuthentication()
                 .AddIdentityServerJwt();
+
+            services.AddSignalR();
+
+            services.AddTransient<IChatMessageRepository, ChatMessageRepository>();
+            services.AddTransient<IMessageProcessingService, MessageProcessingService>();
 
             services.AddControllersWithViews();
             services.AddRazorPages();
@@ -73,6 +80,7 @@ namespace Chat.Server
 
             app.UseEndpoints(endpoints =>
             {
+                endpoints.MapHub<ChatHub>("hubs/chat-hub");
                 endpoints.MapRazorPages();
                 endpoints.MapControllers();
                 endpoints.MapFallbackToFile("index.html");
