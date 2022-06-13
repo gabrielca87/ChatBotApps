@@ -14,9 +14,10 @@ namespace Chat.Server.Services.MessageProcessing
 
         private readonly IChatMessageRepository _chatMessageRepository;
         private readonly IQueuePublisherService _queuePublisherService;
-        private bool _canSendBackToClients = false;
 
-        public bool CanSendBackToClients { get => _canSendBackToClients; }
+        private bool _botHasSomethingToSay;
+
+        public bool BotHasSomethingToSay { get { return _botHasSomethingToSay; } }
 
         public MessageProcessingService(IChatMessageRepository chatMessageRepository, IQueuePublisherService queuePublisherService)
         {
@@ -24,48 +25,63 @@ namespace Chat.Server.Services.MessageProcessing
             _queuePublisherService = queuePublisherService;
         }
 
-        public async Task<ChatMessage> ProcessMessage(string message, string user, DateTime dateTime)
+        public async Task<string> ProcessMessage(string message, string user, DateTime dateTime)
         {
-            ChatMessage chatMessage;
+            _botHasSomethingToSay = true;
 
-            if (IsStockCommand(message))
+            if (IsCommand(message))
             {
-                _canSendBackToClients = false;
+                string command = GetCommand(message);
+                if (string.IsNullOrEmpty(command) || !IsStockCommand(command))
+                {
+                    return "I don't understand this command.";
+                }
 
-                chatMessage = new ChatMessage
-                { 
-                    Message = "I will briefly return the response for your command.", 
-                    User = "BOT", 
-                    DateTime = DateTime.Now
-                };
-
-                string stock = GetStockValue(message);
+                string stock = GetStockCode(message);
+                if (string.IsNullOrEmpty(stock))
+                {
+                    return "The command is valid but the stock code is missing.";
+                }
 
                 _queuePublisherService.Publish(stock);
+
+                return "I will quickly return the response for this command.";
             }
-            else
+
+            var chatMessage = new ChatMessage
             {
-                _canSendBackToClients = true;
+                Message = message,
+                User = user,
+                DateTime = dateTime
+            };
 
-                chatMessage = new ChatMessage
-                { 
-                    Message = message, 
-                    User = user, 
-                    DateTime = dateTime
-                };
+            await _chatMessageRepository.CreateAsync(chatMessage);
 
-                await _chatMessageRepository.CreateAsync(chatMessage);
+            _botHasSomethingToSay = false;
+            return null;
+        }
+
+        private bool IsStockCommand(string command)
+        {
+            return command.StartsWith(STOCK_COMMAND);
+        }
+
+        private bool IsCommand(string message)
+        {
+            return message.StartsWith("/");
+        }
+
+        private string GetCommand(string message)
+        {
+            if (message.Contains("="))
+            {
+                return message.Substring(0, message.IndexOf("=") + 1);
             }
 
-            return chatMessage;
+            return null;
         }
 
-        private bool IsStockCommand(string message)
-        {
-            return message.StartsWith(STOCK_COMMAND);
-        }
-
-        private string GetStockValue(string message)
+        private string GetStockCode(string message)
         {
             return message.Remove(0, STOCK_COMMAND.Length);
         }

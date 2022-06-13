@@ -6,7 +6,7 @@ namespace Chat.Server.Services.MessageProcessing
 {
     public interface IMessageProcessingService
     {
-        bool CanSendBackToClients { get; }
-        Task<ChatMessage> ProcessMessage(string message, string user, DateTime dateTime);
+        bool BotHasSomethingToSay { get; }
+        Task<string> ProcessMessage(string message, string user, DateTime dateTime);
     }
 }

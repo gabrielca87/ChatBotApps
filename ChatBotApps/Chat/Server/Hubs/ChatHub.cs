@@ -19,10 +19,10 @@ namespace Chat.Server.Hubs
         {
             await Clients.All.SendAsync("ReceiveMessage", message, user, dateTime);
 
-            var chatMessage = await _messageProcessingService.ProcessMessage(message, user, dateTime);
-            if (chatMessage.User == "BOT")
+            var messageProcessed = await _messageProcessingService.ProcessMessage(message, user, dateTime);
+            if (_messageProcessingService.BotHasSomethingToSay)
             {
-                await Clients.All.SendAsync("ReceiveMessage", chatMessage.Message, chatMessage.User, chatMessage.DateTime);
+                await Clients.All.SendAsync("ReceiveMessage", messageProcessed, "BOT", dateTime);
             }
         }
     }
