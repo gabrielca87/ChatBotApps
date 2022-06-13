@@ -10,7 +10,7 @@ namespace Chat.Server.Services.MessageProcessing
 {
     public class MessageProcessingService : IMessageProcessingService
     {
-        private const string STOCK_COMMAND = "/stock=";
+        const string STOCK_COMMAND = "/stock=";
 
         private readonly IChatMessageRepository _chatMessageRepository;
         private readonly IQueuePublisherService _queuePublisherService;
@@ -29,36 +29,44 @@ namespace Chat.Server.Services.MessageProcessing
         {
             _botHasSomethingToSay = true;
 
-            if (IsCommand(message))
+            try
             {
-                string command = GetCommand(message);
-                if (string.IsNullOrEmpty(command) || !IsStockCommand(command))
+                if (IsCommand(message))
                 {
-                    return "I don't understand this command.";
+                    string command = GetCommand(message);
+                    if (string.IsNullOrEmpty(command) || !IsStockCommand(command))
+                    {
+                        return "I don't understand this command.";
+                    }
+
+                    string stock = GetStockCode(message);
+                    if (string.IsNullOrEmpty(stock))
+                    {
+                        return "The command is valid but the stock code is missing.";
+                    }
+
+                    _queuePublisherService.Publish(stock);
+
+                    return "I will quickly return the response for this command.";
                 }
 
-                string stock = GetStockCode(message);
-                if (string.IsNullOrEmpty(stock))
+                var chatMessage = new ChatMessage
                 {
-                    return "The command is valid but the stock code is missing.";
-                }
+                    Message = message,
+                    User = user,
+                    DateTime = dateTime
+                };
 
-                _queuePublisherService.Publish(stock);
+                await _chatMessageRepository.CreateAsync(chatMessage);
 
-                return "I will quickly return the response for this command.";
+                _botHasSomethingToSay = false;
+                return null;
             }
-
-            var chatMessage = new ChatMessage
+            catch (Exception)
             {
-                Message = message,
-                User = user,
-                DateTime = dateTime
-            };
-
-            await _chatMessageRepository.CreateAsync(chatMessage);
-
-            _botHasSomethingToSay = false;
-            return null;
+                return "There was an error processing the message.";
+                //TODO: log
+            }
         }
 
         private bool IsStockCommand(string command)

@@ -1,5 +1,7 @@
-﻿using Chat.Server.Hubs;
+﻿using Chat.Server.Config;
+using Chat.Server.Hubs;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System;
@@ -10,31 +12,37 @@ namespace Chat.Server.Services.QueueService
 {
     public class QueueConsumerService : IQueueConsumerService
     {
-        const string HOST_NAME = "localhost";
-        const string QUEUE_MESSAGE = "queue_message";
-        
         private readonly IHubContext<ChatHub> _chatHub;
+        private readonly IOptions<RabbitMQSettings> _config;
         private IConnection _connection;
         private IModel _channel;
 
-        public QueueConsumerService(IHubContext<ChatHub> chatHub)
+        public QueueConsumerService(IHubContext<ChatHub> chatHub, IOptions<RabbitMQSettings> config)
         {
             _chatHub = chatHub;
+            _config = config;
         }
 
         public void Run()
         {
-            var factory = new ConnectionFactory() { HostName = HOST_NAME };
-            
-            _connection = factory.CreateConnection();
-            _channel = _connection.CreateModel();
+            try
+            {
+                var factory = new ConnectionFactory() { HostName = _config.Value.HostName };
 
-            _channel.QueueDeclare(queue: QUEUE_MESSAGE, durable: false, exclusive: false, autoDelete: false, arguments: null);
+                _connection = factory.CreateConnection();
+                _channel = _connection.CreateModel();
 
-            var consumer = new EventingBasicConsumer(_channel);
-            consumer.Received += Consumer_Received;
+                _channel.QueueDeclare(queue: _config.Value.QueueMessage, durable: false, exclusive: false, autoDelete: false, arguments: null);
 
-            _channel.BasicConsume(QUEUE_MESSAGE, autoAck: true, consumer: consumer);
+                var consumer = new EventingBasicConsumer(_channel);
+                consumer.Received += Consumer_Received;
+
+                _channel.BasicConsume(_config.Value.QueueMessage, autoAck: true, consumer: consumer);
+            }
+            catch (Exception)
+            {
+                //TODO: Log
+            }
         }
 
         private void Consumer_Received(object model, BasicDeliverEventArgs ea)

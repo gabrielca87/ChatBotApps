@@ -1,4 +1,6 @@
+using Bot.Config;
 using Bot.Services.Stock;
+using Microsoft.Extensions.Options;
 using Moq;
 using Moq.Protected;
 using System.Net;
@@ -17,6 +19,7 @@ namespace ChatBotApps.Test.Bot
             //Arrange
             string stock = "aapl.us";
             string csvContent = "Symbol,Date,Time,Open,High,Low,Close,Volume\nAAPL.US,2022-06-09,22:00:10,147.08,147.95,142.53,142.64,69472976";
+            string uri = "https://stooq.com/q/l/?s={0}&f=sd2t2ohlcv&h&e=csv";
 
             var handlerMock = new Mock<HttpMessageHandler>();
             handlerMock
@@ -31,8 +34,12 @@ namespace ChatBotApps.Test.Bot
                     Content = new StringContent(csvContent)
                 }).Verifiable();
 
+            var stockServiceSettings = new StockServiceSettings { Uri = uri };
+            var optionsMock = new Mock<IOptions<StockServiceSettings>>();
+            optionsMock.Setup(x => x.Value).Returns(stockServiceSettings);
+
             var httpClient = new HttpClient(handlerMock.Object);
-            var stockService = new StockService(httpClient);
+            var stockService = new StockService(httpClient, optionsMock.Object);
 
             //Act
             var stockQuoteMessage = await stockService.GetStockQuoteMessage(stock);
@@ -48,12 +55,12 @@ namespace ChatBotApps.Test.Bot
         }
 
         [Theory]
-        [InlineData("aapl.us", "Symbol,Date,Time,Open,High,Low,Close,Volume")]
-        [InlineData("aapl.us", "Symbol,Date,Time,Open,High,Low,Close,Volume\nAAPL.US,2022-06-09,22:00:10,147.08")]
-        [InlineData("aapl.us", "Symbol,Date,Time,Open,High,Low,Close,Volume\nAAPL.US,2022-06-09,22:00:10,N/D,N/D,N/D,N/D,N/D")]
-        public async Task GetStockQuoteMessage_Stock_ErrorMessage(string stock, string csvContent)
+        [InlineData("aapl.us", "Symbol,Date,Time,Open,High,Low,Close,Volume", "https://stooq.com/q/l/")]
+        [InlineData("aapl.us", "Symbol,Date,Time,Open,High,Low,Close,Volume\nAAPL.US,2022-06-09,22:00:10,147.08", "https://stooq.com/q/l/")]
+        [InlineData("aapl.us", "Symbol,Date,Time,Open,High,Low,Close,Volume\nAAPL.US,2022-06-09,22:00:10,N/D,N/D,N/D,N/D,N/D", "https://stooq.com/q/l/")]
+        public async Task GetStockQuoteMessage_Stock_ErrorMessage(string stock, string csvContent, string uri)
         {
-            //Arrange            
+            //Arrange
             var handlerMock = new Mock<HttpMessageHandler>();
             handlerMock
                 .Protected()
@@ -67,8 +74,12 @@ namespace ChatBotApps.Test.Bot
                     Content = new StringContent(csvContent)
                 }).Verifiable();
 
+            var stockServiceSettings = new StockServiceSettings { Uri = uri };
+            var optionsMock = new Mock<IOptions<StockServiceSettings>>();
+            optionsMock.Setup(x => x.Value).Returns(stockServiceSettings);
+
             var httpClient = new HttpClient(handlerMock.Object);
-            var stockService = new StockService(httpClient);
+            var stockService = new StockService(httpClient, optionsMock.Object);
 
             //Act
             var stockQuoteMessage = await stockService.GetStockQuoteMessage(stock);
