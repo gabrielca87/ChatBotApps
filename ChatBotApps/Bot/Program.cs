@@ -21,6 +21,7 @@ namespace Bot
         {
             var services = new ServiceCollection();
             services.AddTransient<IStockService, StockService>();
+            services.AddHttpClient<StockService>();
             services.AddTransient<IQueueService, QueueService>();
 
             _serviceProvider = services.BuildServiceProvider();

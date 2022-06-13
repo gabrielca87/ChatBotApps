@@ -9,6 +9,13 @@ namespace Bot.Services.Stock
         const string STOCK_SERVICE_URL = "https://stooq.com/q/l/?s={0}&f=sd2t2ohlcv&h&e=csv";
         const string STOCK_MESSAGE_SUCCESS = "{0} quote is ${1} per share.";
         const string STOCK_MESSAGE_ERROR = "I got an error trying to get a stock value for '{0}'.";
+        
+        private readonly HttpClient _httpClient;
+
+        public StockService(HttpClient httpClient)
+        {
+            _httpClient = httpClient;
+        }
 
         public async Task<string> GetStockQuoteMessage(string stock)
         {
@@ -17,12 +24,9 @@ namespace Bot.Services.Stock
 
             try
             {
-                var client = new HttpClient();
-                client.DefaultRequestHeaders.Accept.Clear();
-
                 string stockServiceUrl = string.Format(STOCK_SERVICE_URL, stock);
                 
-                string csvContent = await client.GetStringAsync(stockServiceUrl);
+                string csvContent = await _httpClient.GetStringAsync(stockServiceUrl);
 
                 string[] rows = csvContent.Split("\n");
                 if (rows.Length < 1)
