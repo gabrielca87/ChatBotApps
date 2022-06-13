@@ -1,10 +1,7 @@
-﻿using Chat.Server.Hubs;
-using Chat.Server.Models;
+﻿using Chat.Server.Models;
 using Chat.Server.Repositories;
 using Chat.Server.Services.MessageProcessing;
 using Chat.Server.Services.QueueService;
-using Microsoft.AspNet.SignalR.Hubs;
-using Microsoft.AspNetCore.SignalR;
 using Moq;
 using System;
 using System.Threading.Tasks;
