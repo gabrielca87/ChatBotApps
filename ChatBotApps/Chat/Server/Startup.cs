@@ -58,7 +58,6 @@ namespace Chat.Server
             services.AddRazorPages();
 
             services.Configure<RabbitMQSettings>(Configuration.GetSection("RabbitMQSettings"));
-            services.Configure<SignalRSettings>(Configuration.GetSection("SignalRSettings"));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -89,7 +88,7 @@ namespace Chat.Server
 
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapHub<ChatHub>(Configuration.GetValue<string>("SignalRSettings:ChatHub"));
+                endpoints.MapHub<ChatHub>("hubs/chat-hub");
                 endpoints.MapRazorPages();
                 endpoints.MapControllers();
                 endpoints.MapFallbackToFile("index.html");

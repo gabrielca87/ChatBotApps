@@ -40,16 +40,35 @@ It allows several users to talk in a chatroom and also to get stock quotes from 
 - Install Nuget Packages
 - Setup ```appsettings.json``` from ```Chat.Server``` project.
 	- Change the connection strings. The EF approach is Code First, so you can just put any names for databases and they will be created.
-	- Change (if needed) the host name or the name of the queues for RabbitMQ. *If you change it, also change it in ```Bot``` project.*
-	- Change (if needed) the hub name for SignalR. *If you change it, also change it in ```Chat.Client``` project.
+	- Change (**if needed**) the host name or the name of the queues for RabbitMQ. *The default values are ok, but if you change them, also change from ```Bot``` project.*
 - Setup ```appsettings.json``` from ```Bot``` project.
-	- Change (if needed) the host name or the name of the queues for RabbitMQ. *If you change it, also change it in ```Chat.Server``` project.*
-	- Change (if needed) the uri of the webservice to get stock information.
-- Run these two commands to create the two databases and their tables: ```Update-Database -context ChatAppContext``` and ```Update-Database -context ApplicationDbContext```.
+	- Change (**if needed**) the host name or the name of the queues for RabbitMQ. *The default values are ok, but if you change them, also change from ```Chat.Server``` project.*
+	- Change (**if needed**) the uri of the webservice to get stock information. *The default value is ok.
+- Run these two commands to create the two databases and their tables: 
+	- ```Update-Database -context ChatAppContext```
+	- ```Update-Database -context ApplicationDbContext```.
 - Run RabbitMQ.
 	- If you have it installed locally, run it on the standard port 5672.
-	- If you don't have it installed locally and you have Docker, run this command: ```docker run -it --rm --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3.10-management```.
-- Setup the solution to startup these two projects: ```Chat.Server``` and ```Bot```.
-- Run the solution!
+	- If you don't have it installed locally and you have Docker, run this command:
+		- ```docker run -it --rm --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3.10-management```.
+- Setup the solution to startup these two projects:
+	- ```Chat.Server```
+	- ```Bot```
+- Run the solution!	
 
-	
+## Usage
+
+You can use these two users that are created by default.
+
+1. Username: ```user1@email.com```. Password: ```Password1!```.
+2. Username: ```user2@email.com```. Password: ```Password2!```.
+
+If you need more users or you don't want to use these you can create as many as you want.
+Steps to create a user:
+1. Go to Home page.
+2. Click in Register link on the top bar.
+3. Enter your information and click in Register button.
+4. Click the link that emulates the email confirmation.
+5. Click in Login link on the top bar.
+6. Enter your new credentials.
+7. Start chatting!
